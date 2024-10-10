@@ -1,6 +1,9 @@
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui';
 import gsap from 'gsap';
+
+import RubiksCube from '../components/RubiksCube';
 
 /**
  * Debug
@@ -21,15 +24,22 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 
 /**
- * Objects
+ * Rubik's Cube
  */
 
-const cube = new THREE.Mesh(
-    new THREE.BoxGeometry(1,1,1),
-    new THREE.MeshBasicMaterial({color:'#ff0000'})
-)
+// const cube = new THREE.Mesh(
+//     new THREE.BoxGeometry(1,1,1),
+//     new THREE.MeshBasicMaterial({color:'#ff0000'})
+// )
 
-scene.add(cube);
+// scene.add(cube);
+
+let rubikscube = new RubiksCube();
+rubikscube.init();
+
+console.log(rubikscube.pieces);
+
+scene.add(rubikscube.getCube());
 
 
 /**
@@ -64,8 +74,13 @@ scene.add(cameraGroup);
 
 // Base camera
 const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
-camera.position.z = 6
+camera.position.z = 10
 cameraGroup.add(camera)
+
+// Controls
+const controls = new OrbitControls(camera, canvas)
+controls.enableDamping = true
+
 
 /**
  * Renderer
@@ -86,6 +101,9 @@ const tick = () =>
 
     // Render
     renderer.render(scene, camera)
+
+    // Update controls
+    controls.update()
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
