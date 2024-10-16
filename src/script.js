@@ -27,12 +27,10 @@ const scene = new THREE.Scene()
  * Rubik's Cube
  */
 
-let rubikscube = new RubiksCube();
-rubikscube.init();
+const rubiksCube = new RubiksCube();
+rubiksCube.init();
 
-console.log(rubikscube.pieces);
-
-scene.add(rubikscube.getCube());
+scene.add(rubiksCube.cube);
 
 
 /**
@@ -58,22 +56,122 @@ window.addEventListener('resize', () =>
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
+let raycaster = new THREE.Raycaster();
+let cursor = {
+    x: 0,
+    y: 0
+}
+let selectedPiece = null;
+let dragging = false;
+let prevCursor =  {x:0, y:0};
+
+let movingDirection = null;
+
+let selectedLayer = null;
+let selectedFace = null;
+
+let selectedObject = null;
+
+window.addEventListener('mousedown', (event) => {
+    // Calculate mouse position in normalized device coordinates
+    cursor.x = (event.clientX / sizes.width) * 2 - 1;
+    cursor.y = -(event.clientY / sizes.height) * 2 + 1;
+
+    // Update the raycaster with the camera and cursor position
+    raycaster.setFromCamera(cursor, camera);
+
+    // Calculate objects intersecting the raycaster
+    const intersects = raycaster.intersectObjects(rubiksCube.pieces.flatMap(piece => piece.faces));
+
+    if (intersects.length > 0) {
+        selectedObject = intersects[0].object; 
+
+        console.log(selectedObject);
+
+        // Now you can handle dragging or rotating based on the clicked face
+        dragging = true;
+        prevCursor = { x: cursor.x, y: cursor.y };
+    }
+});
+
+ 
+window.addEventListener('mousemove', (event) => {
+    
+    if(dragging && !movingDirection) {
+        cursor.x = (event.clientX / sizes.width) * 2 - 1;
+        cursor.y = -(event.clientY / sizes.height) * 2 + 1;
+
+        const offset = 0.4;
+        const directionalOffset = 0.2;
+
+        if(cursor.y - offset > prevCursor.y) {
+
+            let tempCursor = cursor;
+
+            if(tempCursor.y + directionalOffset >= cursor.y) {
+                console.log("UP");
+                movingDirection = "UP";
+            }
+
+
+
+        }
+        else if( cursor.y + offset < prevCursor.y) {
+            let tempCursor = cursor;
+
+            if(tempCursor.y + directionalOffset >= cursor.y) {
+                console.log("DOWN");
+                movingDirection = "DOWN";
+            }
+        }
+        
+        else if(cursor.x - offset > prevCursor.x) {
+            let tempCursor = cursor;
+
+            if(tempCursor.y + directionalOffset >= cursor.y) {
+                console.log("RIGHT");
+                movingDirection = "RIGHT";
+            }
+        }
+        else if( cursor.x + offset < prevCursor.x) {
+            let tempCursor = cursor;
+
+            if(tempCursor.y + directionalOffset >= cursor.y) {
+                console.log("LEFT");
+                movingDirection = "LEFT";
+            }
+        }
+
+        rubiksCube.rotate(selectedObject, movingDirection);
+        
+
+        
+    }
+    // prevCursor = {x: cursor.x, y: cursor.y};
+})
+
+window.addEventListener('mouseup', (event) => {
+    cursor = {x:0,y:0};
+    prevCursor = {x:0,y:0};
+    dragging = false;
+    movingDirection = null;
+    selectedObject = null;
+})
+
 /**
  * Camera
- */
+*/
 
 const cameraGroup = new THREE.Group();
 scene.add(cameraGroup);
 
 // Base camera
 const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
-camera.position.z = 10
+camera.position.y = 6;
+camera.position.x = -6;
+camera.position.z = 7;
+camera.lookAt(new THREE.Vector3(0,0,0))
 cameraGroup.add(camera)
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
 
 /**
  * Renderer
@@ -84,6 +182,19 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+
+// Controls
+// const controls = new OrbitControls(camera, renderer.domElement);
+// controls.enableDamping = true;
+// controls.dampingFactor = 0.05;
+// controls.enableZoom = true;
+
+
+
+
+
+
 
 /**
  * Animate
@@ -96,7 +207,9 @@ const tick = () =>
     renderer.render(scene, camera)
 
     // Update controls
-    controls.update()
+    // controls.update()
+
+
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
